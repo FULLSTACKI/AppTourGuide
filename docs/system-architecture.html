@@ -1,0 +1,1324 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Vinh Khanh Food Street Tour Guide PWA - System Architecture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+/* ──────────────────────────── RESET & BASE ──────────────────────────── */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; font-size: 15px; }
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #f5f5f5;
+  color: #212121;
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+/* ──────────────────────────── COLOR TOKENS ───────────────────────────── */
+:root {
+  --orange-primary: #e65100;
+  --orange-light: #ff6d00;
+  --orange-bg: #fff3e0;
+  --orange-dark: #bf360c;
+  --teal-primary: #00838f;
+  --teal-light: #00acc1;
+  --teal-bg: #e0f7fa;
+  --teal-dark: #006064;
+  --sidebar-w: 280px;
+  --header-h: 0px;
+  --gray-50: #fafafa;
+  --gray-100: #f5f5f5;
+  --gray-200: #eeeeee;
+  --gray-300: #e0e0e0;
+  --gray-600: #757575;
+  --gray-700: #616161;
+  --gray-800: #424242;
+  --gray-900: #212121;
+  --code-bg: #1e1e2e;
+  --code-fg: #cdd6f4;
+}
+
+/* ──────────────────────────── SIDEBAR ────────────────────────────────── */
+.sidebar {
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  width: var(--sidebar-w);
+  background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+  overflow-y: auto;
+  border-right: 1px solid rgba(255,255,255,0.05);
+}
+.sidebar-brand {
+  padding: 28px 24px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.sidebar-brand h1 {
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+  color: #fff;
+}
+.sidebar-brand .brand-sub {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: rgba(255,255,255,0.45);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 6px;
+}
+.sidebar-brand .brand-badge {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.badge-orange { background: var(--orange-primary); color: #fff; }
+.badge-teal { background: var(--teal-primary); color: #fff; margin-left: 4px; }
+
+.sidebar-nav { flex: 1; padding: 16px 0; }
+.sidebar-nav .nav-group-label {
+  padding: 8px 24px 4px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(255,255,255,0.3);
+}
+.sidebar-nav a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 24px;
+  text-decoration: none;
+  color: rgba(255,255,255,0.65);
+  font-size: 0.82rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  border-left: 3px solid transparent;
+}
+.sidebar-nav a:hover {
+  color: #fff;
+  background: rgba(255,255,255,0.06);
+  border-left-color: var(--orange-primary);
+}
+.sidebar-nav a .nav-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px; height: 22px;
+  border-radius: 6px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.5);
+  flex-shrink: 0;
+}
+.sidebar-nav a:hover .nav-num {
+  background: var(--orange-primary);
+  color: #fff;
+}
+.sidebar-footer {
+  padding: 16px 24px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  font-size: 0.65rem;
+  color: rgba(255,255,255,0.3);
+  line-height: 1.6;
+}
+
+/* ──────────────────────────── MAIN CONTENT ───────────────────────────── */
+.main {
+  margin-left: var(--sidebar-w);
+  min-height: 100vh;
+}
+.main-header {
+  background: linear-gradient(135deg, var(--orange-primary) 0%, var(--orange-dark) 100%);
+  color: #fff;
+  padding: 56px 56px 48px;
+}
+.main-header h1 {
+  font-size: 2rem;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+}
+.main-header p {
+  margin-top: 12px;
+  font-size: 0.95rem;
+  font-weight: 400;
+  opacity: 0.85;
+  max-width: 700px;
+  line-height: 1.7;
+}
+.header-meta {
+  display: flex;
+  gap: 24px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+.header-meta span {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.7;
+  padding: 4px 12px;
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 4px;
+}
+
+.content-body { padding: 48px 56px 96px; max-width: 1000px; }
+
+/* ──────────────────────────── SECTION BLOCKS ─────────────────────────── */
+.section-block {
+  margin-bottom: 56px;
+  scroll-margin-top: 32px;
+}
+.section-block .section-tag {
+  display: inline-block;
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 3px 10px;
+  border-radius: 4px;
+  margin-bottom: 12px;
+}
+.tag-orange { background: var(--orange-bg); color: var(--orange-primary); }
+.tag-teal { background: var(--teal-bg); color: var(--teal-primary); }
+
+.section-block h2 {
+  font-size: 1.55rem;
+  font-weight: 800;
+  color: var(--gray-900);
+  letter-spacing: -0.02em;
+  margin-bottom: 8px;
+  line-height: 1.3;
+}
+.section-block h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--gray-800);
+  margin: 24px 0 8px;
+}
+.section-block h4 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--teal-primary);
+  margin: 20px 0 6px;
+}
+.section-block p,
+.section-block li {
+  font-size: 0.88rem;
+  color: var(--gray-700);
+  line-height: 1.8;
+}
+.section-block ul, .section-block ol {
+  padding-left: 20px;
+  margin: 8px 0;
+}
+.section-block li { margin-bottom: 4px; }
+.section-divider {
+  height: 1px;
+  background: var(--gray-300);
+  margin: 48px 0;
+}
+
+/* ──────────────────────────── CODE BLOCKS ────────────────────────────── */
+pre.code-block {
+  background: var(--code-bg);
+  color: var(--code-fg);
+  border-radius: 10px;
+  padding: 20px 24px;
+  overflow-x: auto;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 0.78rem;
+  line-height: 1.7;
+  margin: 14px 0 18px;
+  border: 1px solid rgba(255,255,255,0.05);
+  position: relative;
+}
+pre.code-block::before {
+  content: attr(data-lang);
+  position: absolute;
+  top: 8px; right: 12px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(205,214,244,0.35);
+}
+code.inline {
+  background: var(--gray-200);
+  color: var(--orange-dark);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.82em;
+  font-weight: 500;
+}
+
+/* ──────────────────────────── HIGHLIGHT CARDS ────────────────────────── */
+.info-card {
+  border-radius: 10px;
+  padding: 20px 24px;
+  margin: 16px 0;
+  font-size: 0.85rem;
+  line-height: 1.7;
+  border-left: 4px solid;
+}
+.card-orange {
+  background: var(--orange-bg);
+  border-color: var(--orange-primary);
+  color: var(--orange-dark);
+}
+.card-teal {
+  background: var(--teal-bg);
+  border-color: var(--teal-primary);
+  color: var(--teal-dark);
+}
+
+/* ──────────────────────────── TABLE ──────────────────────────────────── */
+.doc-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 14px 0 18px;
+  font-size: 0.82rem;
+}
+.doc-table th {
+  background: var(--gray-200);
+  padding: 10px 16px;
+  text-align: left;
+  font-weight: 700;
+  color: var(--gray-800);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: 2px solid var(--gray-300);
+}
+.doc-table td {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--gray-200);
+  color: var(--gray-700);
+  vertical-align: top;
+}
+.doc-table tbody tr:hover { background: var(--gray-50); }
+
+/* ──────────────────────────── MERMAID ────────────────────────────────── */
+.mermaid-wrapper {
+  background: #fff;
+  border: 1px solid var(--gray-300);
+  border-radius: 10px;
+  padding: 32px 24px;
+  margin: 16px 0;
+  overflow-x: auto;
+}
+
+/* ──────────────────────────── TECH STACK GRID ────────────────────────── */
+.tech-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+  margin: 16px 0;
+}
+.tech-card {
+  background: #fff;
+  border: 1px solid var(--gray-300);
+  border-radius: 10px;
+  padding: 18px 20px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.tech-card:hover {
+  border-color: var(--teal-primary);
+  box-shadow: 0 4px 16px rgba(0,131,143,0.1);
+}
+.tech-card .tc-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--teal-primary);
+  margin-bottom: 4px;
+}
+.tech-card .tc-value {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--gray-900);
+}
+.tech-card .tc-desc {
+  font-size: 0.75rem;
+  color: var(--gray-600);
+  margin-top: 4px;
+}
+
+/* ──────────────────────────── RESPONSIVE ─────────────────────────────── */
+@media (max-width: 900px) {
+  .sidebar { display: none; }
+  .main { margin-left: 0; }
+  .main-header, .content-body { padding-left: 24px; padding-right: 24px; }
+  .tech-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════ SIDEBAR ════════════════════════ -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <h1>Vinh Khanh<br/>Food Street</h1>
+    <div class="brand-sub">System Architecture &amp; Documentation</div>
+    <span class="brand-badge badge-orange">.NET 10</span>
+    <span class="brand-badge badge-teal">React 19</span>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-group-label">Kien truc he thong</div>
+    <a href="#overview"><span class="nav-num">01</span> Tong quan</a>
+    <a href="#startup"><span class="nav-num">02</span> Khoi dong &amp; Luong hoat dong</a>
+    <a href="#gps"><span class="nav-num">03</span> He thong xu ly GPS</a>
+    <a href="#content"><span class="nav-num">04</span> Module Content</a>
+    <a href="#audio"><span class="nav-num">05</span> Module Audio</a>
+
+    <div class="nav-group-label" style="margin-top: 12px;">Bao mat &amp; Tinh nang</div>
+    <a href="#auth"><span class="nav-num">06</span> Phan quyen Bearer Token</a>
+    <a href="#multilingual"><span class="nav-num">07</span> Module Da ngon ngu</a>
+    <a href="#map"><span class="nav-num">08</span> Nen tang Ban do</a>
+    <a href="#admin"><span class="nav-num">09</span> Chuc nang Admin</a>
+
+    <div class="nav-group-label" style="margin-top: 12px;">Ky thuat &amp; Flow</div>
+    <a href="#patterns"><span class="nav-num">10</span> Design Pattern &amp; Constants</a>
+    <a href="#flow"><span class="nav-num">11</span> Business Flow Diagram</a>
+  </nav>
+
+  <div class="sidebar-footer">
+    Vinh Khanh Food Street Tour Guide<br/>
+    Version 1.0 &mdash; March 2026<br/>
+    Ho Chi Minh City, Vietnam
+  </div>
+</aside>
+
+<!-- ════════════════════════ MAIN CONTENT ════════════════════════ -->
+<main class="main">
+
+  <!-- Header -->
+  <header class="main-header">
+    <h1>System Architecture &amp; Project Documentation</h1>
+    <p>
+      Tai lieu ky thuat toan dien cho he thong PWA huong dan am thuc duong Vinh Khanh.
+      Bao gom kien truc backend, frontend, he thong GPS thoi gian thuc, Text-to-Speech,
+      quan ly da ngon ngu, va quy trinh dat mon truoc.
+    </p>
+    <div class="header-meta">
+      <span>ASP.NET Core 10.0</span>
+      <span>React 19 + Vite 8</span>
+      <span>PostgreSQL + EF Core</span>
+      <span>Leaflet.js + OSM</span>
+      <span>Web Speech API</span>
+    </div>
+  </header>
+
+  <div class="content-body">
+
+    <!-- ──────────────── 01. TONG QUAN ──────────────── -->
+    <section class="section-block" id="overview">
+      <span class="section-tag tag-orange">Section 01</span>
+      <h2>Tong quan he thong</h2>
+      <p>
+        <strong>Vinh Khanh Food Street Tour Guide</strong> la mot ung dung web tien tien (Progressive Web App)
+        duoc thiet ke danh rieng cho du khach kham pha con duong am thuc Vinh Khanh tai Quan 4, TP. Ho Chi Minh.
+        He thong ket hop GPS thoi gian thuc, ban do tuong tac, huong dan am thanh tu dong va kha nang dat mon
+        truoc de mang lai trai nghiem am thuc lien mach, khong rao can ngon ngu.
+      </p>
+
+      <h3>Van de can giai quyet</h3>
+      <ul>
+        <li><strong>Rao can ngon ngu:</strong> Du khach quoc te khong the doc thuc don tieng Viet, khong biet mon gi ngon, gia ca ra sao.</li>
+        <li><strong>Thieu thong tin:</strong> Khong co he thong tap trung gioi thieu cac quan an, mon dac san tren duong Vinh Khanh.</li>
+        <li><strong>Trai nghiem roi rac:</strong> Du khach phai tu tim kiem, khong co huong dan tu dong khi di bo tren duong.</li>
+      </ul>
+
+      <h3>Giai phap cong nghe</h3>
+      <div class="tech-grid">
+        <div class="tech-card">
+          <div class="tc-label">Backend</div>
+          <div class="tc-value">ASP.NET Core 10</div>
+          <div class="tc-desc">RESTful API voi Clean Architecture, Repository Pattern, Dependency Injection</div>
+        </div>
+        <div class="tech-card">
+          <div class="tc-label">Frontend</div>
+          <div class="tc-value">React 19 + Vite 8</div>
+          <div class="tc-desc">TypeScript 5.9, Tailwind CSS 4, PWA manifest, Leaflet.js</div>
+        </div>
+        <div class="tech-card">
+          <div class="tc-label">Database</div>
+          <div class="tc-value">PostgreSQL</div>
+          <div class="tc-desc">Entity Framework Core 10, Code-First Migrations, Fluent API</div>
+        </div>
+        <div class="tech-card">
+          <div class="tc-label">Audio Engine</div>
+          <div class="tc-value">Web Speech API</div>
+          <div class="tc-desc">Text-to-Speech mien phi, ho tro da ngon ngu, khong can file MP3</div>
+        </div>
+        <div class="tech-card">
+          <div class="tc-label">Ban do</div>
+          <div class="tc-value">Leaflet + OpenStreetMap</div>
+          <div class="tc-desc">100% mien phi, khong can API key, phu hop cho MVP</div>
+        </div>
+        <div class="tech-card">
+          <div class="tc-label">Xac thuc</div>
+          <div class="tc-value">Session Bearer Token</div>
+          <div class="tc-desc">Custom middleware, token luu trong SessionTokens table</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <!-- ──────────────── 02. KHOI DONG & LUONG HOAT DONG ──────────────── -->
+    <section class="section-block" id="startup">
+      <span class="section-tag tag-teal">Section 02</span>
+      <h2>Khoi dong &amp; Luong hoat dong</h2>
+
+      <h3>2.1 Khoi dong he thong</h3>
+      <p>He thong gom 2 process chinh chay song song va 1 tunnel tuy chon de test tren thiet bi di dong:</p>
+
+      <h4>Backend - ASP.NET Core (.NET 10)</h4>
+<pre class="code-block" data-lang="bash">cd backend
+dotnet run
+# Server chay tai http://localhost:5000
+# Swagger UI: http://localhost:5000/swagger</pre>
+
+      <p>
+        Khi khoi dong, <code class="inline">Program.cs</code> se tu dong thuc hien
+        <code class="inline">Database.Migrate()</code> de cap nhat schema va goi
+        <code class="inline">DatabaseSeeder.SeedAsync()</code> de tao tai khoan admin mac dinh
+        (<code class="inline">admin / admin123</code>) cung du lieu mau (2 dia diem, mon an kem theo).
+      </p>
+
+      <h4>Frontend - React 19 + Vite 8</h4>
+<pre class="code-block" data-lang="bash">cd frontend/my-app
+npm install
+npm run dev
+# Dev server chay tai http://localhost:5173</pre>
+
+      <h4>Ngrok - HTTPS Tunnel (tuy chon)</h4>
+      <p>
+        Do Geolocation API yeu cau HTTPS tren thiet bi di dong, can su dung Ngrok de tao
+        tunnel tu HTTPS public URL den localhost:5173.
+      </p>
+<pre class="code-block" data-lang="bash">ngrok http 5173
+# => https://xxxx-xxx.ngrok-free.app</pre>
+      <div class="info-card card-orange">
+        <strong>Luu y:</strong> Ngrok tu dong chen mot trang canh bao "Visit Site". De bypass,
+        frontend da cau hinh header <code class="inline">ngrok-skip-browser-warning: true</code>
+        trong Axios Interceptor, dam bao cac API call khong bi chan.
+      </div>
+
+      <h3>2.2 Luong hoat dong nguoi dung</h3>
+      <ol>
+        <li>Nguoi dung mo ung dung PWA tren trinh duyet di dong.</li>
+        <li>He thong yeu cau cap quyen truy cap vi tri (GPS Permission).</li>
+        <li>Man hinh hien thi overlay <strong>"Start Audio Tour"</strong> - nguoi dung nhan de unlock audio engine (bat buoc theo browser policy).</li>
+        <li>Ban do Leaflet hien thi vi tri hien tai (cham xanh) va cac dia diem an uong (cham cam).</li>
+        <li>Nguoi dung bat dau di bo tren duong Vinh Khanh.</li>
+        <li>He thong lien tuc tinh khoang cach GPS. Khi khoang cach &lt; 15m den mot dia diem, tu dong doc gioi thieu bang giong noi.</li>
+        <li>Nguoi dung xem chi tiet mon an, them vao gio hang, dat mon truoc qua form booking.</li>
+        <li>Admin nhan don hang qua dashboard.</li>
+      </ol>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <!-- ──────────────── 03. HE THONG XU LY GPS ──────────────── -->
+    <section class="section-block" id="gps">
+      <span class="section-tag tag-orange">Section 03</span>
+      <h2>He thong xu ly GPS</h2>
+
+      <h3>3.1 Theo doi vi tri thoi gian thuc</h3>
+      <p>
+        He thong su dung <code class="inline">navigator.geolocation.watchPosition()</code> thong qua
+        custom hook <code class="inline">useGeolocation</code> de lien tuc theo doi vi tri nguoi dung.
+        Cac tham so duoc toi uu cho do chinh xac cao:
+      </p>
+<pre class="code-block" data-lang="typescript">// useGeolocation.ts - Custom Hook
+const watchId = navigator.geolocation.watchPosition(
+  onSuccess,
+  onError,
+  {
+    enableHighAccuracy: true,   // Su dung GPS chip, khong dung Wi-Fi
+    maximumAge: 5000,           // Cache vi tri toi da 5 giay
+    timeout: 15000,             // Timeout sau 15 giay
+  }
+);
+
+// Tra ve: { position, error, isTracking }</pre>
+
+      <h3>3.2 Cong thuc Haversine</h3>
+      <p>
+        De tinh khoang cach giua 2 toa do GPS (nguoi dung va dia diem), he thong su dung
+        <strong>cong thuc Haversine</strong> - cong thuc tinh khoang cach duong tron lon tren mat cau
+        Trai Dat voi ban kinh <code class="inline">R = 6,371,000 met</code>.
+      </p>
+<pre class="code-block" data-lang="typescript">// haversine.ts
+const EARTH_RADIUS_METERS = 6_371_000;
+
+export function haversineDistance(
+  lat1: number, lon1: number,
+  lat2: number, lon2: number
+): number {
+  const dLat = toRadians(lat2 - lat1);
+  const dLon = toRadians(lon2 - lon1);
+
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRadians(lat1)) *
+    Math.cos(toRadians(lat2)) *
+    Math.sin(dLon / 2) ** 2;
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return EARTH_RADIUS_METERS * c;
+}</pre>
+
+      <h3>3.3 Ban kinh kich hoat (Trigger Radius)</h3>
+      <div class="info-card card-teal">
+        <strong>AUTOPLAY_RADIUS_METERS = 15</strong><br/>
+        Khi khoang cach tinh duoc &lt; 15 met, he thong tu dong kich hoat tinh nang doc gioi thieu
+        bang giong noi cho dia diem do. Moi dia diem chi duoc tu dong doc <strong>mot lan duy nhat</strong>
+        trong phien su dung (theo doi bang <code class="inline">narratedRef: Set&lt;string&gt;</code>).
+      </div>
+
+<pre class="code-block" data-lang="typescript">// TourMapPage.tsx - Proximity Check
+const AUTOPLAY_RADIUS_METERS = 15;
+
+const checkProximitySpeech = useCallback(() =&gt; {
+  if (!audioUnlocked || !position || places.length === 0) return;
+
+  for (const place of places) {
+    if (narratedRef.current.has(place.id)) continue;
+
+    const dist = haversineDistance(
+      position.latitude, position.longitude,
+      place.latitude, place.longitude
+    );
+
+    if (dist &lt; AUTOPLAY_RADIUS_METERS &amp;&amp; place.translation?.description) {
+      narratedRef.current.add(place.id);
+      setSelectedPlace(place);
+      speakText(`${place.translation.name}. ${place.translation.description}`);
+      break; // chi trigger mot dia diem moi lan
+    }
+  }
+}, [audioUnlocked, position, places, speakText]);</pre>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <!-- ──────────────── 04. MODULE CONTENT ──────────────── -->
+    <section class="section-block" id="content">
+      <span class="section-tag tag-teal">Section 04</span>
+      <h2>Module Content</h2>
+
+      <h3>4.1 Cau truc du lieu</h3>
+      <p>Noi dung duoc to chuc thanh 2 thuc the chinh voi quan he 1:N:</p>
+
+      <table class="doc-table">
+        <thead>
+          <tr><th>Entity</th><th>Mo ta</th><th>Truong chinh</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code class="inline">Place</code></td>
+            <td>Dia diem / Quan an tren duong Vinh Khanh</td>
+            <td>Id, Latitude, Longitude, CoverImageUrl, PriceRange, Status</td>
+          </tr>
+          <tr>
+            <td><code class="inline">PlaceTranslation</code></td>
+            <td>Ban dich da ngon ngu cho dia diem</td>
+            <td>PlaceId, LanguageCode, Name, Description, AudioUrl</td>
+          </tr>
+          <tr>
+            <td><code class="inline">Dish</code></td>
+            <td>Mon an thuoc mot dia diem</td>
+            <td>Id, PlaceId, ImageUrl</td>
+          </tr>
+          <tr>
+            <td><code class="inline">DishTranslation</code></td>
+            <td>Ban dich da ngon ngu cho mon an</td>
+            <td>DishId, LanguageCode, Name, Description</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>4.2 Van de duoc giai quyet</h3>
+      <ul>
+        <li><strong>Rao can ngon ngu:</strong> Moi mon an va dia diem deu co ban dich tieng Anh va tieng Viet (co the mo rong them ja, ko, zh). Du khach doc duoc ten mon, mo ta chi tiet bang ngon ngu cua minh.</li>
+        <li><strong>Thieu thong tin gia ca:</strong> Truong <code class="inline">PriceRange</code> hien thi khoang gia (VD: "50k-150k VND") giup du khach du toan chi phi truoc khi vao quan.</li>
+        <li><strong>Hinh anh hap dan:</strong> <code class="inline">CoverImageUrl</code> va <code class="inline">Dish.ImageUrl</code> cho phep hien thi hinh anh chat luong cao, giup du khach hinh dung mon an truoc khi goi.</li>
+        <li><strong>Trang thai quan:</strong> Truong <code class="inline">Status</code> (boolean) cho biet quan dang mo hay dong, tranh truong hop du khach den noi ma quan khong hoat dong.</li>
+      </ul>
+
+      <h3>4.3 API Endpoints</h3>
+<pre class="code-block" data-lang="http">GET  /api/places?lang=vi          -- Danh sach dia diem (co ban dich)
+GET  /api/places/{id}?lang=en      -- Chi tiet 1 dia diem
+GET  /api/dishes/by-place/{id}?lang=vi  -- Mon an theo dia diem
+POST /api/places                   -- Tao dia diem (Admin)
+PUT  /api/places/{id}              -- Cap nhat dia diem (Admin)
+DELETE /api/places/{id}            -- Xoa dia diem (Admin)</pre>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <!-- ──────────────── 05. MODULE AUDIO ──────────────── -->
+    <section class="section-block" id="audio">
+      <span class="section-tag tag-orange">Section 05</span>
+      <h2>Module Audio</h2>
+
+      <h3>5.1 Cong nghe: Web Speech API</h3>
+      <p>
+        Thay vi su dung file MP3 (ton kem luu tru, can tao truoc cho tung ngon ngu),
+        he thong su dung <code class="inline">window.speechSynthesis</code> - API Text-to-Speech
+        co san trong moi trinh duyet hien dai. Uu diem:
+      </p>
+      <ul>
+        <li><strong>Chi phi = 0:</strong> Khong can dich vu TTS tra phi nhu Google Cloud TTS hay Amazon Polly.</li>
+        <li><strong>Hoat dong offline:</strong> Nhieu thiet bi da tai san giong noi offline (dac biet iOS va Android).</li>
+        <li><strong>Da ngon ngu tu dong:</strong> Chi can thay doi <code class="inline">utterance.lang</code> la chuyen giong doc.</li>
+      </ul>
+
+<pre class="code-block" data-lang="typescript">// PlaceDetailSheet.tsx - Toggle Speech
+const SPEECH_LANG_MAP: Record&lt;string, string&gt; = {
+  en: 'en-US',
+  vi: 'vi-VN',
+  ja: 'ja-JP',
+  ko: 'ko-KR',
+  zh: 'zh-CN',
+};
+
+const utterance = new SpeechSynthesisUtterance(
+  `${place.translation.name}. ${place.translation.description}`
+);
+utterance.lang = SPEECH_LANG_MAP[lang] ?? 'en-US';
+utterance.rate = 0.95;
+window.speechSynthesis.speak(utterance);</pre>
+
+      <h3>5.2 Bypass Autoplay Policy</h3>
+      <div class="info-card card-orange">
+        <strong>Van de:</strong> Cac trinh duyet hien dai (Chrome, Safari) <em>cam</em> phat am thanh
+        ma khong co tuong tac cua nguoi dung (user gesture). Dieu nay nghia la khi GPS phat hien
+        nguoi dung gan dia diem, he thong <em>khong the</em> tu dong doc neu chua co click/tap truoc do.
+        <br/><br/>
+        <strong>Giai phap:</strong> Khi PWA khoi dong, hien thi overlay "Start Audio Tour" bat buoc
+        nguoi dung nhan. Khi nhan, he thong phat mot <code class="inline">SpeechSynthesisUtterance</code>
+        rong (silent) de "mo khoa" engine. Sau do, GPS co the kich hoat doc bat ky luc nao.
+      </div>
+
+<pre class="code-block" data-lang="typescript">// TourMapPage.tsx - Unlock Audio Engine
+const handleUnlockAudio = useCallback(() =&gt; {
+  // Phat utterance rong tu user gesture de thoa man browser policy
+  const silent = new SpeechSynthesisUtterance('');
+  window.speechSynthesis.speak(silent);
+  setAudioUnlocked(true);  // Cho phep auto-narration tu day
+}, []);</pre>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <!-- ──────────────── 06. PHAN QUYEN BEARER TOKEN ──────────────── -->
+    <section class="section-block" id="auth">
+      <span class="section-tag tag-teal">Section 06</span>
+      <h2>Phan quyen Bearer Token</h2>
+
+      <h3>6.1 Tong quan co che xac thuc</h3>
+      <p>
+        He thong su dung <strong>Session-based Bearer Token</strong> (khong phai JWT).
+        Token duoc tao khi dang nhap thanh cong, luu trong bang <code class="inline">SessionTokens</code>
+        trong database, va duoc kiem tra moi request thong qua middleware tuy chinh.
+      </p>
+
+      <h3>6.2 Luong xac thuc</h3>
+      <table class="doc-table">
+        <thead>
+          <tr><th>Buoc</th><th>Component</th><th>Mo ta</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td><code class="inline">POST /auth/login</code></td>
+            <td>Frontend gui username/password. Backend xac thuc bang BCrypt, tao session token, tra ve token.</td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td><code class="inline">localStorage</code></td>
+            <td>React luu token vao localStorage duoi key "access_token".</td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td><code class="inline">Axios Interceptor</code></td>
+            <td>Moi request HTTP, interceptor tu dong dinh kem header: Authorization: Bearer &lt;token&gt;</td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td><code class="inline">TokenAuthMiddleware</code></td>
+            <td>Middleware doc header, tra cuu token trong DB, set ClaimsPrincipal voi Username va Role.</td>
+          </tr>
+          <tr>
+            <td>5</td>
+            <td><code class="inline">RequireAuthFilter</code></td>
+            <td>ServiceFilter kiem tra User.Identity.IsAuthenticated. Tra 401 neu chua dang nhap.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>6.3 Backend Middleware</h3>
+<pre class="code-block" data-lang="csharp">// TokenAuthMiddleware.cs
+public async Task InvokeAsync(HttpContext context, AppDbContext db)
+{
+    var authHeader = context.Request.Headers.Authorization.FirstOrDefault();
+
+    if (!string.IsNullOrEmpty(authHeader)
+        &amp;&amp; authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+    {
+        var token = authHeader["Bearer ".Length..].Trim();
+        var session = await db.SessionTokens
+            .Include(s =&gt; s.Account)
+            .FirstOrDefaultAsync(s =&gt; s.Token == token);
+
+        if (session is not null
+            &amp;&amp; session.ExpiresAt &gt; DateTime.UtcNow
+            &amp;&amp; session.Account is not null)
+        {
+            var claims = new[] {
+                new Claim(ClaimTypes.Name, session.Account.Username),
+                new Claim(ClaimTypes.Role, session.Account.Role),
+            };
+            var identity = new ClaimsIdentity(claims, "SessionToken");
+            context.User = new ClaimsPrincipal(identity);
+        }
+    }
+    await _next(context);
+}</pre>
+
+      <h3>6.4 Frontend Axios Interceptor</h3>
+<pre class="code-block" data-lang="typescript">// http.ts
+export const http = axios.create({
+  baseURL: API_BASE,
+  timeout: 20000,
+  headers: { "ngrok-skip-browser-warning": "true" },
+});
+
+http.interceptors.request.use((config) =&gt; {
+  const token = localStorage.getItem("access_token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});</pre>
+
+      <h3>6.5 Bao ve Route</h3>
+<pre class="code-block" data-lang="csharp">// Controller - Chi admin moi truy cap duoc
+[ServiceFilter(typeof(RequireAuthFilter))]
+[HttpPost]
+public async Task&lt;ActionResult&lt;PlaceDto&gt;&gt; Create([FromBody] CreatePlaceRequest req)
+{
+    var created = await _commandService.CreateAsync(req);
+    return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+}</pre>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <!-- ──────────────── 07. MODULE DA NGON NGU ──────────────── -->
+    <section class="section-block" id="multilingual">
+      <span class="section-tag tag-orange">Section 07</span>
+      <h2>Module Da ngon ngu</h2>
+
+      <h3>7.1 Kien truc Translation Tables</h3>
+      <p>
+        Thay vi luu text truc tiep trong entity chinh, he thong su dung
+        <strong>bang dich rieng biet</strong> (Translation Tables) voi quan he 1:N.
+        Moi ban ghi co <code class="inline">LanguageCode</code> (vi, en, ja, ko, zh)
+        va noi dung tuong ung. Cach tiep can nay cho phep mo rong ngon ngu khong gioi han
+        ma khong can thay doi schema.
+      </p>
+
+      <table class="doc-table">
+        <thead>
+          <tr><th>Entity goc</th><th>Translation Table</th><th>Unique Constraint</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code class="inline">Place</code></td>
+            <td><code class="inline">PlaceTranslations</code></td>
+            <td>[PlaceId, LanguageCode] - UNIQUE INDEX</td>
+          </tr>
+          <tr>
+            <td><code class="inline">Dish</code></td>
+            <td><code class="inline">DishTranslations</code></td>
+            <td>[DishId, LanguageCode] - UNIQUE INDEX</td>
+          </tr>
+        </tbody>
+      </table>
+
+<pre class="code-block" data-lang="csharp">// AppDbContext.cs - Fluent API
+modelBuilder.Entity&lt;PlaceTranslation&gt;(entity =&gt; {
+    entity.HasIndex(e =&gt; new { e.PlaceId, e.LanguageCode }).IsUnique();
+    entity.Property(e =&gt; e.LanguageCode).HasMaxLength(10).IsRequired();
+    entity.Property(e =&gt; e.Name).HasMaxLength(200).IsRequired();
+    entity.Property(e =&gt; e.Description).HasMaxLength(2000);
+});</pre>
+
+      <h3>7.2 Frontend - Query da ngon ngu</h3>
+      <p>
+        Frontend truyen tham so <code class="inline">?lang=vi</code> hoac
+        <code class="inline">?lang=en</code> trong moi API call. Backend loc ban dich
+        tuong ung va tra ve duy nhat ban dich phu hop. Khi nguoi dung chuyen ngon ngu
+        tren UI, he thong goi lai API va cap nhat noi dung <strong>khong can reload trang</strong>.
+      </p>
+
+<pre class="code-block" data-lang="typescript">// tourService.ts
+export const placesService = {
+  getAll: (lang: string = 'en') =&gt;
+    http.get&lt;PlaceDto[]&gt;('/api/places', { params: { lang } })
+        .then(r =&gt; r.data),
+};
+
+// TourMapPage.tsx - Fetch khi chuyen ngon ngu
+useEffect(() =&gt; {
+  placesService.getAll(lang).then(data =&gt; setPlaces(data));
+}, [lang]);</pre>
+
+      <h3>7.3 Audio da ngon ngu</h3>
+      <p>
+        Khi nguoi dung chuyen ngon ngu, <code class="inline">SPEECH_LANG_MAP</code> tu dong
+        chuyen doi locale cho Web Speech API. Dong thoi, tap
+        <code class="inline">narratedRef</code> duoc reset de cho phep doc lai cac dia diem
+        bang ngon ngu moi.
+      </p>
+<pre class="code-block" data-lang="typescript">// Reset khi chuyen ngon ngu
+useEffect(() =&gt; {
+  narratedRef.current.clear();      // Cho phep doc lai tat ca dia diem
+  window.speechSynthesis.cancel();  // Dung giong doc hien tai
+  setIsSpeaking(false);
+}, [lang]);</pre>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <!-- ──────────────── 08. NEN TANG BAN DO ──────────────── -->
+    <section class="section-block" id="map">
+      <span class="section-tag tag-teal">Section 08</span>
+      <h2>Nen tang Ban do</h2>
+
+      <h3>8.1 Lua chon cong nghe</h3>
+      <table class="doc-table">
+        <thead>
+          <tr><th>Tieu chi</th><th>Google Maps</th><th>Leaflet + OSM</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Chi phi</td><td>Tra phi sau 28,500 request/thang</td><td>100% mien phi</td></tr>
+          <tr><td>API Key</td><td>Bat buoc, can dang ky billing</td><td>Khong can</td></tr>
+          <tr><td>Ma nguon</td><td>Closed source</td><td>Open source (BSD-2)</td></tr>
+          <tr><td>Tuy chinh</td><td>Han che style</td><td>Toan quyen tuy chinh</td></tr>
+          <tr><td>Phu hop MVP</td><td>Khong (phuc tap, ton kem)</td><td>Tuyet voi</td></tr>
+        </tbody>
+      </table>
+
+      <div class="info-card card-teal">
+        <strong>Quyet dinh:</strong> Su dung <code class="inline">Leaflet.js v1.9.4</code> ket hop
+        <code class="inline">OpenStreetMap</code> tile layer. Hoan toan mien phi, khong yeu cau API key
+        hay thong tin thanh toan, rat phu hop cho giai doan MVP va du an hoc thuat.
+      </div>
+
+      <h3>8.2 Khoi tao ban do</h3>
+<pre class="code-block" data-lang="typescript">// TourMapPage.tsx
+const map = L.map(mapContainerRef.current).setView([16.0471, 108.2068], 16);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&amp;copy; OpenStreetMap contributors',
+  maxZoom: 19,
+}).addTo(map);</pre>
+
+      <h3>8.3 Marker he thong</h3>
+      <p>He thong su dung 2 loai marker custom (khong dung icon mac dinh cua Leaflet):</p>
+      <ul>
+        <li><strong>User Marker (xanh duong):</strong> Hinh tron 16px, vien trang, shadow - bieu thi vi tri hien tai cua nguoi dung.</li>
+        <li><strong>Place Marker (cam):</strong> Hinh tron 24px, bieu thi dia diem an uong. Nhan vao se mo PlaceDetailSheet.</li>
+      </ul>
+
+<pre class="code-block" data-lang="typescript">// User Marker - Custom DivIcon
+const userIcon = L.divIcon({
+  html: '&lt;div style="width:16px;height:16px;background:#3b82f6;
+    border:3px solid white;border-radius:50%;
+    box-shadow:0 0 6px rgba(0,0,0,0.3);"&gt;&lt;/div&gt;',
+  iconSize: [16, 16],
+  iconAnchor: [8, 8],
+  className: '',
+});</pre>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <!-- ──────────────── 09. CHUC NANG ADMIN ──────────────── -->
+    <section class="section-block" id="admin">
+      <span class="section-tag tag-orange">Section 09</span>
+      <h2>Chuc nang Admin</h2>
+
+      <h3>9.1 Tong quan Dashboard</h3>
+      <p>
+        He thong admin la mot SPA (Single Page Application) duoc bao ve boi
+        <code class="inline">ProtectedRoute</code>. Chi nhung nguoi dung da dang nhap
+        voi vai tro admin moi co the truy cap. Giao dien su dung layout sidebar co dinh
+        ben trai voi cac muc dieu huong.
+      </p>
+
+      <table class="doc-table">
+        <thead>
+          <tr><th>Trang</th><th>Route</th><th>Chuc nang</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Dang nhap</td><td><code class="inline">/admin/login</code></td><td>Form dang nhap voi username/password</td></tr>
+          <tr><td>Danh sach dia diem</td><td><code class="inline">/admin/places</code></td><td>Bang danh sach, nut tao moi / sua / xoa</td></tr>
+          <tr><td>Form dia diem</td><td><code class="inline">/admin/places/new</code></td><td>Form tao/sua voi Map Picker va tab da ngon ngu</td></tr>
+          <tr><td>Danh sach mon an</td><td><code class="inline">/admin/dishes</code></td><td>Bang danh sach mon an theo dia diem</td></tr>
+          <tr><td>Form mon an</td><td><code class="inline">/admin/dishes/new</code></td><td>Form tao/sua voi tab da ngon ngu</td></tr>
+        </tbody>
+      </table>
+
+      <h3>9.2 Interactive Map Picker</h3>
+      <p>
+        Khi tao hoac chinh sua dia diem, admin co the <strong>nhan truc tiep len ban do</strong>
+        de chon toa do (latitude, longitude) thay vi nhap thu cong. He thong su dung
+        su kien <code class="inline">map.on('click')</code> cua Leaflet de bat toa do
+        va tu dong dien vao form.
+      </p>
+
+      <h3>9.3 Multilingual Tabs</h3>
+      <p>
+        Form tao/sua dia diem va mon an co <strong>he thong tab da ngon ngu</strong>.
+        Admin chuyen giua tab "Tieng Viet" va "English" de nhap noi dung cho tung ngon ngu
+        tren cung mot form. Khi submit, tat ca ban dich duoc gui di cung luc trong mot request.
+      </p>
+<pre class="code-block" data-lang="typescript">// PlaceForm.tsx - Du lieu submit
+const req: CreatePlaceRequest = {
+  latitude,
+  longitude,
+  coverImageUrl,
+  priceRange,
+  translations: [
+    { languageCode: 'vi', name: viName, description: viDesc, audioUrl: '' },
+    { languageCode: 'en', name: enName, description: enDesc, audioUrl: '' },
+  ],
+};</pre>
+
+      <h3>9.4 Quan ly Don hang (Pre-order)</h3>
+      <p>
+        Khach dat mon truoc qua PlaceDetailSheet. Admin nhan don trong dashboard,
+        co the xem chi tiet va cap nhat trang thai don hang (pending / confirmed / cancelled).
+      </p>
+<pre class="code-block" data-lang="http">POST   /api/orders                  -- Khach tao don (public, khong can auth)
+GET    /api/orders                  -- Danh sach don (Admin)
+GET    /api/orders/{id}             -- Chi tiet don
+GET    /api/orders/place/{placeId}  -- Don theo dia diem (Admin)
+PATCH  /api/orders/{id}/status      -- Cap nhat trang thai (Admin)</pre>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <!-- ──────────────── 10. DESIGN PATTERN & CONSTANTS ──────────────── -->
+    <section class="section-block" id="patterns">
+      <span class="section-tag tag-teal">Section 10</span>
+      <h2>Design Pattern &amp; Key Constants</h2>
+
+      <h3>10.1 Backend Patterns</h3>
+
+      <h4>Repository Pattern</h4>
+      <p>
+        Tach biet logic truy van du lieu (Infrastructure) khoi logic nghiep vu (Application).
+        Moi entity co cac interface rieng biet cho Command va Query (CQRS-lite):
+      </p>
+<pre class="code-block" data-lang="csharp">// Domain Layer - Interface
+public interface IPlaceCommandRepository {
+    Task&lt;Place&gt; CreateAsync(Place place);
+    Task&lt;Place&gt; UpdateAsync(Place place);
+    Task DeleteAsync(Guid id);
+}
+
+public interface IPlaceQueryRepository {
+    Task&lt;Place?&gt; GetByIdAsync(Guid id, string languageCode);
+    Task&lt;List&lt;Place&gt;&gt; GetAllAsync(string languageCode);
+}
+
+// Infrastructure Layer - Implementation
+public class PlaceCommandRepository : IPlaceCommandRepository {
+    private readonly AppDbContext _db;
+    // ... EF Core implementation
+}</pre>
+
+      <h4>Dependency Injection</h4>
+<pre class="code-block" data-lang="csharp">// Program.cs - Service Registration
+builder.Services.AddScoped&lt;IPlaceCommandRepository, PlaceCommandRepository&gt;();
+builder.Services.AddScoped&lt;IPlaceQueryRepository, PlaceQueryRepository&gt;();
+builder.Services.AddScoped&lt;IDishCommandRepository, DishCommandRepository&gt;();
+builder.Services.AddScoped&lt;IDishQueryRepository, DishQueryRepository&gt;();
+builder.Services.AddScoped&lt;IOrderRepository, OrderRepository&gt;();
+
+builder.Services.AddScoped&lt;PlaceCommandService&gt;();
+builder.Services.AddScoped&lt;PlaceQueryService&gt;();
+builder.Services.AddScoped&lt;DishCommandService&gt;();
+builder.Services.AddScoped&lt;DishQueryService&gt;();
+builder.Services.AddScoped&lt;OrderService&gt;();</pre>
+
+      <h3>10.2 Frontend Patterns</h3>
+
+      <h4>Custom Hooks</h4>
+      <p>
+        Logic phuc tap duoc dong goi trong React Custom Hooks, tai su dung duoc va de test:
+      </p>
+      <ul>
+        <li><code class="inline">useGeolocation()</code> - Theo doi vi tri GPS thoi gian thuc, tra ve position/error/isTracking.</li>
+        <li><code class="inline">useAuth()</code> - Quan ly trang thai dang nhap, token, auto-validate khi reload trang.</li>
+      </ul>
+
+      <h4>Axios Interceptor Pattern</h4>
+      <p>
+        Mot diem duy nhat (<code class="inline">http.ts</code>) cau hinh baseURL, timeout,
+        va tu dong dinh kem Bearer token + ngrok header cho moi request.
+        Tat ca service file su dung chung instance nay.
+      </p>
+
+      <h3>10.3 Key Constants</h3>
+      <table class="doc-table">
+        <thead>
+          <tr><th>Hang so</th><th>Gia tri</th><th>Vi tri</th><th>Mo ta</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code class="inline">AUTOPLAY_RADIUS_METERS</code></td>
+            <td>15</td>
+            <td>TourMapPage.tsx</td>
+            <td>Ban kinh (met) de tu dong phat audio khi nguoi dung den gan dia diem</td>
+          </tr>
+          <tr>
+            <td><code class="inline">EARTH_RADIUS_METERS</code></td>
+            <td>6,371,000</td>
+            <td>haversine.ts</td>
+            <td>Ban kinh Trai Dat tinh bang met, dung trong cong thuc Haversine</td>
+          </tr>
+          <tr>
+            <td><code class="inline">ngrok-skip-browser-warning</code></td>
+            <td>"true"</td>
+            <td>http.ts</td>
+            <td>Header de bypass trang canh bao cua Ngrok free tier</td>
+          </tr>
+          <tr>
+            <td><code class="inline">utterance.rate</code></td>
+            <td>0.95</td>
+            <td>PlaceDetailSheet.tsx</td>
+            <td>Toc do doc cham hon binh thuong 5%, de nghe ro hon</td>
+          </tr>
+          <tr>
+            <td><code class="inline">maximumAge</code></td>
+            <td>5000 (ms)</td>
+            <td>useGeolocation.ts</td>
+            <td>Cache vi tri GPS toi da 5 giay truoc khi yeu cau cap nhat</td>
+          </tr>
+          <tr>
+            <td><code class="inline">timeout</code></td>
+            <td>15000 (ms)</td>
+            <td>useGeolocation.ts</td>
+            <td>Thoi gian cho toi da 15 giay cho moi lan cap nhat GPS</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <!-- ──────────────── 11. BUSINESS FLOW DIAGRAM ──────────────── -->
+    <section class="section-block" id="flow">
+      <span class="section-tag tag-orange">Section 11</span>
+      <h2>Business Flow Diagram</h2>
+      <p>
+        So do duoi day mo ta hanh trinh nguoi dung tu dau den cuoi (End-to-End),
+        bao gom ca luong Admin quan ly don hang:
+      </p>
+
+      <div class="mermaid-wrapper">
+        <div class="mermaid">
+flowchart TD
+    A["Mo ung dung PWA"] --> B["Yeu cau quyen GPS"]
+    B --> C{"Cho phep?"}
+    C -- "Tu choi" --> D["Hien thong bao loi GPS"]
+    C -- "Dong y" --> E["Hien thi ban do + Vi tri nguoi dung"]
+    E --> F["Hien overlay: Start Audio Tour"]
+    F --> G["Nguoi dung nhan Start"]
+    G --> H["Mo khoa Speech Engine"]
+    H --> I["Bat dau theo doi GPS lien tuc"]
+    I --> J["watchPosition cap nhat vi tri"]
+    J --> K["Tinh khoang cach Haversine den cac dia diem"]
+    K --> L{"Khoang cach nho hon 15m?"}
+    L -- "Khong" --> J
+    L -- "Co" --> M["Tu dong phat audio gioi thieu"]
+    M --> N["Mo PlaceDetailSheet"]
+    N --> O["Hien thi thong tin dia diem + Thuc don"]
+    O --> P{"Nguoi dung dat mon?"}
+    P -- "Khong" --> Q["Dong sheet, tiep tuc di bo"]
+    Q --> J
+    P -- "Co" --> R["Them mon vao gio hang"]
+    R --> S["Nhan Check Out"]
+    S --> T["Dien form: Ten, Gio den, So nguoi"]
+    T --> U["Gui don: POST /api/orders"]
+    U --> V["Hien man hinh thanh cong"]
+    V --> W["Admin nhan don hang trong Dashboard"]
+    W --> X["Cap nhat trang thai: Confirmed"]
+
+    style A fill:#e65100,stroke:#bf360c,color:#fff
+    style G fill:#00838f,stroke:#006064,color:#fff
+    style M fill:#e65100,stroke:#bf360c,color:#fff
+    style U fill:#00838f,stroke:#006064,color:#fff
+    style V fill:#2e7d32,stroke:#1b5e20,color:#fff
+    style X fill:#2e7d32,stroke:#1b5e20,color:#fff
+    style D fill:#c62828,stroke:#b71c1c,color:#fff
+        </div>
+      </div>
+
+      <h3>Giai thich cac buoc chinh</h3>
+      <table class="doc-table">
+        <thead>
+          <tr><th>Giai doan</th><th>Component</th><th>Cong nghe su dung</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Khoi dong &amp; GPS</td>
+            <td>TourMapPage + useGeolocation</td>
+            <td>navigator.geolocation.watchPosition, Leaflet.js</td>
+          </tr>
+          <tr>
+            <td>Unlock Audio</td>
+            <td>TourMapPage overlay</td>
+            <td>SpeechSynthesisUtterance (silent), User Gesture</td>
+          </tr>
+          <tr>
+            <td>Proximity Detection</td>
+            <td>TourMapPage + haversine.ts</td>
+            <td>Haversine Formula, AUTOPLAY_RADIUS = 15m</td>
+          </tr>
+          <tr>
+            <td>Auto Narration</td>
+            <td>speakText callback</td>
+            <td>Web Speech API (window.speechSynthesis)</td>
+          </tr>
+          <tr>
+            <td>Xem thong tin</td>
+            <td>PlaceDetailSheet</td>
+            <td>React Component, TTS toggle, tourLabels i18n</td>
+          </tr>
+          <tr>
+            <td>Dat mon truoc</td>
+            <td>OrderModal</td>
+            <td>Cart state, Axios POST /api/orders</td>
+          </tr>
+          <tr>
+            <td>Quan ly don</td>
+            <td>Admin Dashboard</td>
+            <td>OrdersController, RequireAuthFilter</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ──────────────── FOOTER ──────────────── -->
+    <div class="section-divider"></div>
+    <div style="text-align: center; padding: 24px 0 0;">
+      <p style="font-size: 0.75rem; color: var(--gray-600);">
+        Vinh Khanh Food Street Tour Guide PWA &mdash; System Architecture Documentation v1.0
+      </p>
+      <p style="font-size: 0.7rem; color: var(--gray-600); margin-top: 4px;">
+        .NET 10 &middot; React 19 &middot; PostgreSQL &middot; Leaflet.js &middot; Web Speech API
+      </p>
+    </div>
+
+  </div><!-- /content-body -->
+</main>
+
+<!-- ════════════════════════ SCRIPTS ════════════════════════ -->
+<script>
+  // Initialize Mermaid
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: {
+      primaryColor: '#fff3e0',
+      primaryBorderColor: '#e65100',
+      primaryTextColor: '#212121',
+      lineColor: '#757575',
+      secondaryColor: '#e0f7fa',
+      tertiaryColor: '#fafafa',
+      fontFamily: 'Inter, sans-serif',
+      fontSize: '13px',
+    },
+    flowchart: {
+      htmlLabels: true,
+      curve: 'basis',
+      rankSpacing: 50,
+      nodeSpacing: 40,
+    },
+  });
+
+  // Active nav highlighting on scroll
+  (function () {
+    const sections = document.querySelectorAll('.section-block[id]');
+    const navLinks = document.querySelectorAll('.sidebar-nav a');
+
+    function setActiveNav() {
+      let currentId = '';
+      sections.forEach(function (section) {
+        const rect = section.getBoundingClientRect();
+        if (rect.top <= 120) {
+          currentId = section.getAttribute('id');
+        }
+      });
+
+      navLinks.forEach(function (link) {
+        const href = link.getAttribute('href');
+        if (href === '#' + currentId) {
+          link.style.color = '#fff';
+          link.style.borderLeftColor = '#e65100';
+          link.style.background = 'rgba(255,255,255,0.06)';
+          var numEl = link.querySelector('.nav-num');
+          if (numEl) {
+            numEl.style.background = '#e65100';
+            numEl.style.color = '#fff';
+          }
+        } else {
+          link.style.color = '';
+          link.style.borderLeftColor = '';
+          link.style.background = '';
+          var numEl = link.querySelector('.nav-num');
+          if (numEl) {
+            numEl.style.background = '';
+            numEl.style.color = '';
+          }
+        }
+      });
+    }
+
+    window.addEventListener('scroll', setActiveNav);
+    setActiveNav();
+  })();
+</script>
+</body>
+</html>
