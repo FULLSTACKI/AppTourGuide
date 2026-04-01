@@ -36,6 +36,22 @@ export interface PlaceFormData {
   translations: PlaceTranslationInput[];
 }
 
+/**
+ * Logical frontend state for creating/updating a Place.
+ * Sent as multipart/form-data to match [FromForm] + IFormFile on the backend.
+ */
+export interface PlaceCreatePayload {
+  latitude: number;
+  longitude: number;
+  priceRange: string;
+  sourceLanguageCode: string;
+  coverImage: File | null;
+  translation: {
+    name: string;
+    description: string;
+  };
+}
+
 export interface DishTranslationInput {
   languageCode: string;
   name: string;
@@ -73,5 +89,37 @@ export interface AdminDishRow {
     name: string;
     description: string;
     languageCode: string;
+  } | null;
+}
+
+// ─── MenuItem admin types ────────────────────────────────
+export interface MenuItemTranslationInput {
+  languageCode: string;
+  name: string;
+  description: string;
+}
+
+export interface MenuItemFormData {
+  placeId: string;
+  imageUrl: string;
+  basePrice: number;
+  isRecommended: boolean;
+  dietaryTags: string;
+  translations: MenuItemTranslationInput[];
+}
+
+export interface AdminMenuItemRow {
+  id: string;
+  placeId: string;
+  imageUrl: string;
+  basePrice: number;
+  isRecommended: boolean;
+  dietaryTags: string[];
+  originalName: string;
+  translation: {
+    id: string;
+    languageCode: string;
+    name: string;
+    description: string;
   } | null;
 }

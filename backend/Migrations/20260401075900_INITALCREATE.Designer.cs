@@ -12,8 +12,8 @@ using TourGuideBackend.Infrastructure.Persistence;
 namespace TourGuideBackend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260324211731_AddOrderAndBooking")]
-    partial class AddOrderAndBooking
+    [Migration("20260401075900_INITALCREATE")]
+    partial class INITALCREATE
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -25,11 +25,15 @@ namespace TourGuideBackend.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("TourGuideBackend.Domain.Entities.Dish", b =>
+            modelBuilder.Entity("TourGuideBackend.Domain.Entities.Combo", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
+
+                    b.Property<decimal>("BasePrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
 
                     b.Property<string>("ImageUrl")
                         .IsRequired()
@@ -43,7 +47,116 @@ namespace TourGuideBackend.Migrations
 
                     b.HasIndex("PlaceId");
 
+                    b.ToTable("Combos");
+                });
+
+            modelBuilder.Entity("TourGuideBackend.Domain.Entities.ComboDish", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ComboId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("DishId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DishId");
+
+                    b.HasIndex("ComboId", "DishId")
+                        .IsUnique();
+
+                    b.ToTable("ComboDishes");
+                });
+
+            modelBuilder.Entity("TourGuideBackend.Domain.Entities.ComboTranslation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ComboId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("LanguageCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ComboId", "LanguageCode")
+                        .IsUnique();
+
+                    b.ToTable("ComboTranslations");
+                });
+
+            modelBuilder.Entity("TourGuideBackend.Domain.Entities.Dish", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("BasePrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<string>("DietaryTags")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<bool>("IsRecommended")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("PlaceId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PlaceId");
+
                     b.ToTable("Dishes");
+                });
+
+            modelBuilder.Entity("TourGuideBackend.Domain.Entities.DishRelation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("PrimaryDishId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("RelatedDishId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RelatedDishId");
+
+                    b.HasIndex("PrimaryDishId", "RelatedDishId")
+                        .IsUnique();
+
+                    b.ToTable("DishRelations");
                 });
 
             modelBuilder.Entity("TourGuideBackend.Domain.Entities.DishTranslation", b =>
@@ -78,77 +191,62 @@ namespace TourGuideBackend.Migrations
                     b.ToTable("DishTranslations");
                 });
 
-            modelBuilder.Entity("TourGuideBackend.Domain.Entities.Order", b =>
+            modelBuilder.Entity("TourGuideBackend.Domain.Entities.MenuItem", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("ArrivalTime")
+                    b.Property<decimal>("BasePrice")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("DietaryTags")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasColumnType("text");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("CustomerName")
+                    b.Property<string>("ImageUrl")
                         .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+                        .HasColumnType("text");
 
-                    b.Property<string>("Note")
-                        .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
-                    b.Property<int>("NumberOfPeople")
-                        .HasColumnType("integer");
+                    b.Property<bool>("IsRecommended")
+                        .HasColumnType("boolean");
 
                     b.Property<Guid>("PlaceId")
                         .HasColumnType("uuid");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasDefaultValue("pending");
 
                     b.HasKey("Id");
 
                     b.HasIndex("PlaceId");
 
-                    b.ToTable("Orders");
+                    b.ToTable("MenuItems");
                 });
 
-            modelBuilder.Entity("TourGuideBackend.Domain.Entities.OrderItem", b =>
+            modelBuilder.Entity("TourGuideBackend.Domain.Entities.MenuItemTranslation", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("DishId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("DishNameSnapshot")
+                    b.Property<string>("Description")
                         .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+                        .HasColumnType("text");
 
-                    b.Property<Guid>("OrderId")
+                    b.Property<string>("LanguageCode")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("MenuItemId")
                         .HasColumnType("uuid");
 
-                    b.Property<int>("Quantity")
-                        .HasColumnType("integer");
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DishId");
+                    b.HasIndex("MenuItemId");
 
-                    b.HasIndex("OrderId");
-
-                    b.ToTable("OrderItems");
+                    b.ToTable("MenuItemTranslations");
                 });
 
             modelBuilder.Entity("TourGuideBackend.Domain.Entities.Place", b =>
@@ -305,6 +403,47 @@ namespace TourGuideBackend.Migrations
                     b.ToTable("SessionTokens");
                 });
 
+            modelBuilder.Entity("TourGuideBackend.Domain.Entities.Combo", b =>
+                {
+                    b.HasOne("TourGuideBackend.Domain.Entities.Place", "Place")
+                        .WithMany()
+                        .HasForeignKey("PlaceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Place");
+                });
+
+            modelBuilder.Entity("TourGuideBackend.Domain.Entities.ComboDish", b =>
+                {
+                    b.HasOne("TourGuideBackend.Domain.Entities.Combo", "Combo")
+                        .WithMany("ComboDishes")
+                        .HasForeignKey("ComboId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TourGuideBackend.Domain.Entities.Dish", "Dish")
+                        .WithMany()
+                        .HasForeignKey("DishId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Combo");
+
+                    b.Navigation("Dish");
+                });
+
+            modelBuilder.Entity("TourGuideBackend.Domain.Entities.ComboTranslation", b =>
+                {
+                    b.HasOne("TourGuideBackend.Domain.Entities.Combo", "Combo")
+                        .WithMany("Translations")
+                        .HasForeignKey("ComboId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Combo");
+                });
+
             modelBuilder.Entity("TourGuideBackend.Domain.Entities.Dish", b =>
                 {
                     b.HasOne("TourGuideBackend.Domain.Entities.Place", "Place")
@@ -314,6 +453,25 @@ namespace TourGuideBackend.Migrations
                         .IsRequired();
 
                     b.Navigation("Place");
+                });
+
+            modelBuilder.Entity("TourGuideBackend.Domain.Entities.DishRelation", b =>
+                {
+                    b.HasOne("TourGuideBackend.Domain.Entities.Dish", "PrimaryDish")
+                        .WithMany()
+                        .HasForeignKey("PrimaryDishId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TourGuideBackend.Domain.Entities.Dish", "RelatedDish")
+                        .WithMany()
+                        .HasForeignKey("RelatedDishId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("PrimaryDish");
+
+                    b.Navigation("RelatedDish");
                 });
 
             modelBuilder.Entity("TourGuideBackend.Domain.Entities.DishTranslation", b =>
@@ -327,7 +485,7 @@ namespace TourGuideBackend.Migrations
                     b.Navigation("Dish");
                 });
 
-            modelBuilder.Entity("TourGuideBackend.Domain.Entities.Order", b =>
+            modelBuilder.Entity("TourGuideBackend.Domain.Entities.MenuItem", b =>
                 {
                     b.HasOne("TourGuideBackend.Domain.Entities.Place", "Place")
                         .WithMany()
@@ -338,23 +496,15 @@ namespace TourGuideBackend.Migrations
                     b.Navigation("Place");
                 });
 
-            modelBuilder.Entity("TourGuideBackend.Domain.Entities.OrderItem", b =>
+            modelBuilder.Entity("TourGuideBackend.Domain.Entities.MenuItemTranslation", b =>
                 {
-                    b.HasOne("TourGuideBackend.Domain.Entities.Dish", "Dish")
-                        .WithMany()
-                        .HasForeignKey("DishId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("TourGuideBackend.Domain.Entities.Order", "Order")
-                        .WithMany("Items")
-                        .HasForeignKey("OrderId")
+                    b.HasOne("TourGuideBackend.Domain.Entities.MenuItem", "MenuItem")
+                        .WithMany("Translations")
+                        .HasForeignKey("MenuItemId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Dish");
-
-                    b.Navigation("Order");
+                    b.Navigation("MenuItem");
                 });
 
             modelBuilder.Entity("TourGuideBackend.Domain.Entities.PlaceTranslation", b =>
@@ -379,14 +529,21 @@ namespace TourGuideBackend.Migrations
                     b.Navigation("Account");
                 });
 
+            modelBuilder.Entity("TourGuideBackend.Domain.Entities.Combo", b =>
+                {
+                    b.Navigation("ComboDishes");
+
+                    b.Navigation("Translations");
+                });
+
             modelBuilder.Entity("TourGuideBackend.Domain.Entities.Dish", b =>
                 {
                     b.Navigation("Translations");
                 });
 
-            modelBuilder.Entity("TourGuideBackend.Domain.Entities.Order", b =>
+            modelBuilder.Entity("TourGuideBackend.Domain.Entities.MenuItem", b =>
                 {
-                    b.Navigation("Items");
+                    b.Navigation("Translations");
                 });
 
             modelBuilder.Entity("TourGuideBackend.Domain.Entities.Place", b =>

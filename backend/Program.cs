@@ -2,8 +2,10 @@ using Microsoft.EntityFrameworkCore;
 using TourGuideBackend.Infrastructure.Persistence;
 using TourGuideBackend.Domain.Repositories;
 using TourGuideBackend.Infrastructure.Persistence.Repositories;
+using TourGuideBackend.Infrastructure.ExternalServices;
 using TourGuideBackend.Application.Services;
 using TourGuideBackend.Middleware;
+using TourGuideBackend.Domain.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +13,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddHttpClient();
+builder.Services.AddMemoryCache();
 
 // Auth filter (for [ServiceFilter(typeof(RequireAuthFilter))])
 builder.Services.AddScoped<RequireAuthFilter>();
@@ -42,7 +46,12 @@ builder.Services.AddScoped<IPlaceCommandRepository, PlaceCommandRepository>();
 builder.Services.AddScoped<IPlaceQueryRepository, PlaceQueryRepository>();
 builder.Services.AddScoped<IDishCommandRepository, DishCommandRepository>();
 builder.Services.AddScoped<IDishQueryRepository, DishQueryRepository>();
-builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+builder.Services.AddScoped<ITranslateService, TranslateService>();
+builder.Services.AddScoped<IStorageService, StorageService>();
+builder.Services.AddScoped<ICurrencyExchangeService, CurrencyExchangeService>();
+builder.Services.AddScoped<IMenuItemCommandRepository, MenuItemCommandRepository>();
+builder.Services.AddScoped<IMenuItemQueryRepository, MenuItemQueryRepository>();
+builder.Services.AddScoped<IComboQueryRepository, ComboQueryRepository>();
 
 // Application services
 builder.Services.AddScoped<AccountService>();
@@ -50,7 +59,9 @@ builder.Services.AddScoped<PlaceCommandService>();
 builder.Services.AddScoped<PlaceQueryService>();
 builder.Services.AddScoped<DishCommandService>();
 builder.Services.AddScoped<DishQueryService>();
-builder.Services.AddScoped<OrderService>();
+builder.Services.AddScoped<MenuItemQueryService>();
+builder.Services.AddScoped<MenuItemCommandService>();
+builder.Services.AddScoped<ComboQueryService>();
 
 var app = builder.Build();
 

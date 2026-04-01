@@ -20,8 +20,12 @@ namespace TourGuideBackend.Infrastructure.Persistence
         public DbSet<PlaceTranslation> PlaceTranslations => Set<PlaceTranslation>();
         public DbSet<Dish> Dishes => Set<Dish>();
         public DbSet<DishTranslation> DishTranslations => Set<DishTranslation>();
-        public DbSet<Order> Orders => Set<Order>();
-        public DbSet<OrderItem> OrderItems => Set<OrderItem>();
+        public DbSet<DishRelation> DishRelations => Set<DishRelation>();
+        public DbSet<Combo> Combos => Set<Combo>();
+        public DbSet<ComboTranslation> ComboTranslations => Set<ComboTranslation>();
+        public DbSet<ComboDish> ComboDishes => Set<ComboDish>();
+        public DbSet<MenuItem> MenuItems => Set<MenuItem>();
+        public DbSet<MenuItemTranslation> MenuItemTranslations => Set<MenuItemTranslation>();
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
@@ -119,6 +123,8 @@ namespace TourGuideBackend.Infrastructure.Persistence
             {
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.ImageUrl).HasMaxLength(500);
+                entity.Property(e => e.BasePrice).HasPrecision(18, 2);
+                entity.Property(e => e.DietaryTags).HasMaxLength(500);
 
                 entity.HasMany(e => e.Translations)
                     .WithOne(t => t.Dish)
@@ -136,46 +142,76 @@ namespace TourGuideBackend.Infrastructure.Persistence
                 entity.HasIndex(e => new { e.DishId, e.LanguageCode }).IsUnique();
             });
 
-            // Account
-            modelBuilder.Entity<AccountModel>(entity =>
+            // DishRelation: self-referencing M:N (RESTRICT to avoid multiple cascade paths)
+            modelBuilder.Entity<DishRelation>(entity =>
             {
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Username).HasMaxLength(100).IsRequired();
-                entity.HasIndex(e => e.Username).IsUnique();
+
+                entity.HasIndex(e => new { e.PrimaryDishId, e.RelatedDishId }).IsUnique();
+
+                entity.HasOne(e => e.PrimaryDish)
+                    .WithMany()
+                    .HasForeignKey(e => e.PrimaryDishId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.RelatedDish)
+                    .WithMany()
+                    .HasForeignKey(e => e.RelatedDishId)
+                    .OnDelete(DeleteBehavior.Restrict);
             });
 
-            // Order -> OrderItem (1:N)
-            modelBuilder.Entity<Order>(entity =>
+            // Combo -> ComboTranslation (1:N), Combo -> Place (N:1)
+            modelBuilder.Entity<Combo>(entity =>
             {
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.CustomerName).HasMaxLength(200).IsRequired();
-                entity.Property(e => e.ArrivalTime).HasMaxLength(50).IsRequired();
-                entity.Property(e => e.NumberOfPeople).IsRequired();
-                entity.Property(e => e.Note).HasMaxLength(1000);
-                entity.Property(e => e.Status).HasMaxLength(20).HasDefaultValue("pending");
-                entity.Property(e => e.CreatedAt).IsRequired();
+                entity.Property(e => e.ImageUrl).HasMaxLength(500);
+                entity.Property(e => e.BasePrice).HasPrecision(18, 2);
 
                 entity.HasOne(e => e.Place)
                     .WithMany()
                     .HasForeignKey(e => e.PlaceId)
                     .OnDelete(DeleteBehavior.Cascade);
 
-                entity.HasMany(e => e.Items)
-                    .WithOne(i => i.Order)
-                    .HasForeignKey(i => i.OrderId)
+                entity.HasMany(e => e.Translations)
+                    .WithOne(t => t.Combo)
+                    .HasForeignKey(t => t.ComboId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasMany(e => e.ComboDishes)
+                    .WithOne(cd => cd.Combo)
+                    .HasForeignKey(cd => cd.ComboId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
 
-            modelBuilder.Entity<OrderItem>(entity =>
+            modelBuilder.Entity<ComboTranslation>(entity =>
             {
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Quantity).IsRequired();
-                entity.Property(e => e.DishNameSnapshot).HasMaxLength(200).IsRequired();
+                entity.Property(e => e.LanguageCode).HasMaxLength(10).IsRequired();
+                entity.Property(e => e.Name).HasMaxLength(200).IsRequired();
+                entity.Property(e => e.Description).HasMaxLength(2000);
+
+                entity.HasIndex(e => new { e.ComboId, e.LanguageCode }).IsUnique();
+            });
+
+            // ComboDish: junction M:N between Combo and Dish
+            modelBuilder.Entity<ComboDish>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                entity.HasIndex(e => new { e.ComboId, e.DishId }).IsUnique();
 
                 entity.HasOne(e => e.Dish)
                     .WithMany()
                     .HasForeignKey(e => e.DishId)
                     .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // Account
+            modelBuilder.Entity<AccountModel>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Username).HasMaxLength(100).IsRequired();
+                entity.HasIndex(e => e.Username).IsUnique();
             });
 
             // SessionToken -> Account (N:1)

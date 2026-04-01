@@ -1,6 +1,6 @@
 namespace TourGuideBackend.Domain.Entities
 {
-    public class Dish
+    public class MenuItem
     {
         public Guid Id { get; set; } = Guid.NewGuid();
         public Guid PlaceId { get; set; }
@@ -17,6 +17,6 @@ namespace TourGuideBackend.Domain.Entities
 
         // Navigation properties
         public Place Place { get; set; } = null!;
-        public ICollection<DishTranslation> Translations { get; set; } = new List<DishTranslation>();
+        public ICollection<MenuItemTranslation> Translations { get; set; } = new List<MenuItemTranslation>();
     }
 }
